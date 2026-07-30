@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { ArrowRight, Building2, Mail, MessageSquare, User } from "lucide-react";
+import { ArrowRight, Building2, Lock, Mail, MessageSquare, User } from "lucide-react";
 
 import { ApiError, requestAccessRequest } from "@/lib/api-client";
 
@@ -23,6 +23,7 @@ import { ApiError, requestAccessRequest } from "@/lib/api-client";
 export function RequestAccessForm() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [organization, setOrganization] = useState("");
   const [message, setMessage] = useState("");
   const [submitted, setSubmitted] = useState(false);
@@ -38,9 +39,7 @@ export function RequestAccessForm() {
       await requestAccessRequest({
         name,
         email,
-        // Empty optionals are absence, not an empty answer — the backend stores
-        // null either way, but sending "" makes the request say something it does
-        // not mean.
+        password,
         ...(organization.trim() ? { organization } : {}),
         ...(message.trim() ? { message } : {}),
       });
@@ -66,20 +65,15 @@ export function RequestAccessForm() {
             Request received
           </h1>
           <p className="mt-3 text-sm leading-relaxed text-slate-600">
-            We&apos;ll review it and email{" "}
-            <span className="font-semibold text-slate-900">{email}</span> if
-            it&apos;s approved. The email contains a link to set up your account,
-            and it expires in 48 hours.
-          </p>
-          <p className="mt-4 text-xs leading-relaxed text-slate-500">
-            Nothing has been created in your name yet — an account only exists
-            once you open that link.
+            We&apos;ll review your request for{" "}
+            <span className="font-semibold text-slate-900">{email}</span>.
+            Once an admin approves your request, you can log in immediately with your email and password.
           </p>
           <Link
-            href="/"
-            className="mt-8 inline-flex items-center gap-2 text-sm font-bold text-slate-700 transition hover:text-slate-900"
+            href="/login"
+            className="mt-8 inline-flex items-center justify-center rounded-2xl bg-slate-900 px-6 py-3 text-sm font-extrabold text-white transition hover:bg-slate-800"
           >
-            Back to xite.co.in
+            Go to Login
           </Link>
         </div>
       </main>
@@ -93,8 +87,7 @@ export function RequestAccessForm() {
           Request access
         </h1>
         <p className="mt-3 text-sm leading-relaxed text-slate-600">
-          XITE is opened up one institution at a time. Tell us who you are and
-          we&apos;ll be in touch.
+          XITE is opened up one institution at a time. Tell us who you are and set your account password.
         </p>
 
         <form onSubmit={submit} className="mt-8 space-y-4">
@@ -121,8 +114,21 @@ export function RequestAccessForm() {
               placeholder="you@college.edu.in"
               className={INPUT}
             />
+          </Field>
+
+          <Field label="Account Password" icon={<Lock className="h-4 w-4" />}>
+            <input
+              type="password"
+              value={password}
+              onChange={(event) => setPassword(event.target.value)}
+              autoComplete="new-password"
+              required
+              minLength={6}
+              placeholder="••••••••"
+              className={INPUT}
+            />
             <span className="mt-1.5 block text-xs text-slate-500">
-              The approval link goes here, and only this address can use it.
+              You will use this password to log in once an admin approves your request.
             </span>
           </Field>
 

@@ -110,6 +110,7 @@ export const loginRequest = (email: string, password: string) =>
 export const requestAccessRequest = (input: {
   name: string;
   email: string;
+  password?: string;
   organization?: string;
   message?: string;
 }) =>
