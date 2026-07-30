@@ -2,13 +2,9 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { Mail, Lock, Sparkles, ArrowRight, ShieldCheck } from "lucide-react";
+import { Mail, Sparkles, ArrowRight, ShieldCheck } from "lucide-react";
 
-import {
-  ApiError,
-  requestLoginCodeRequest,
-  verifyLoginCodeRequest,
-} from "@/lib/api-client";
+import { ApiError, loginWithEmailRequest } from "@/lib/api-client";
 
 function GoogleButton() {
   return (
@@ -49,16 +45,6 @@ export function CredentialsForm({
   showGoogleButton?: boolean;
 }) {
   const [email, setEmail] = useState(initialEmail);
-  const [code, setCode] = useState("");
-  /**
-   * Which half of the form is showing.
-   *
-   * Not derived from "has a code been sent", because the backend deliberately
-   * will not say — it answers the same way for an address it knows and one it
-   * does not, so that this form cannot be used to find out which colleges exist.
-   * Moving on is a consequence of submitting, not of an answer.
-   */
-  const [step, setStep] = useState<"email" | "code">("email");
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
 
@@ -66,38 +52,21 @@ export function CredentialsForm({
     setEmail("admin@greenfield.edu.in");
   }
 
-  function failed(cause: unknown, fallback: string) {
-    setError(
-      cause instanceof ApiError && cause.status !== 0 ? cause.message : fallback,
-    );
-    setPending(false);
-  }
-
-  async function sendCode(event: React.FormEvent<HTMLFormElement>) {
+  async function submit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setError(null);
     setPending(true);
 
     try {
-      await requestLoginCodeRequest(email);
-      setStep("code");
-      setCode("");
-      setPending(false);
-    } catch (cause) {
-      failed(cause, "Could not reach the server. Check your connection.");
-    }
-  }
-
-  async function submitCode(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    setError(null);
-    setPending(true);
-
-    try {
-      const { next } = await verifyLoginCodeRequest(email, code);
+      const { next } = await loginWithEmailRequest(email);
       window.location.assign(next);
     } catch (cause) {
-      failed(cause, "Could not reach the server. Check your connection.");
+      setError(
+        cause instanceof ApiError && cause.status !== 0
+          ? cause.message
+          : "Could not reach the server. Check your connection.",
+      );
+      setPending(false);
     }
   }
 
@@ -178,14 +147,10 @@ export function CredentialsForm({
           ) : null}
 
           {/*
-            Two steps, one form element at a time. The address is the account;
-            the code sent to it is the proof of holding the account, and there is
-            no password on this path at all.
+            One field. The address is the whole credential — no password, and no
+            code sent to the mailbox to prove it is yours.
           */}
-          <form
-            onSubmit={step === "email" ? sendCode : submitCode}
-            className="space-y-4"
-          >
+          <form onSubmit={submit} className="space-y-4">
             <div>
               <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1.5">
                 Email Address
@@ -202,63 +167,15 @@ export function CredentialsForm({
                   autoComplete="email"
                   placeholder="admin@college.edu.in"
                   required
-                  // Locked once a code is out, because changing it here would
-                  // check the new address against the old address's code.
-                  readOnly={step === "code"}
-                  className="w-full rounded-2xl border border-slate-200 bg-slate-50/50 pl-10 pr-4 py-3 text-sm font-semibold text-slate-900 outline-none transition focus:border-blue-600 focus:bg-white focus:ring-4 focus:ring-blue-500/10 placeholder:text-slate-400 read-only:text-slate-500 read-only:focus:border-slate-200 read-only:focus:ring-0"
+                  autoFocus
+                  className="w-full rounded-2xl border border-slate-200 bg-slate-50/50 pl-10 pr-4 py-3 text-sm font-semibold text-slate-900 outline-none transition focus:border-blue-600 focus:bg-white focus:ring-4 focus:ring-blue-500/10 placeholder:text-slate-400"
                 />
               </div>
             </div>
 
-            {step === "code" ? (
-              <div>
-                <div className="flex items-center justify-between mb-1.5">
-                  <label className="block text-xs font-bold uppercase tracking-wider text-slate-600">
-                    6-digit code
-                  </label>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setStep("email");
-                      setCode("");
-                      setError(null);
-                    }}
-                    className="text-[11px] font-bold text-blue-600 hover:underline"
-                  >
-                    Use a different email
-                  </button>
-                </div>
-                <div className="relative">
-                  <div className="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none text-slate-400">
-                    <Lock className="h-4 w-4" />
-                  </div>
-                  <input
-                    name="code"
-                    inputMode="numeric"
-                    pattern="\d{6}"
-                    maxLength={6}
-                    value={code}
-                    onChange={(event) =>
-                      setCode(event.target.value.replace(/\D/g, ""))
-                    }
-                    autoComplete="one-time-code"
-                    autoFocus
-                    placeholder="000000"
-                    required
-                    className="w-full rounded-2xl border border-slate-200 bg-slate-50/50 pl-10 pr-4 py-3 text-center text-lg font-bold tracking-[0.4em] text-slate-900 outline-none transition focus:border-blue-600 focus:bg-white focus:ring-4 focus:ring-blue-500/10 placeholder:tracking-[0.4em] placeholder:text-slate-300"
-                  />
-                </div>
-                <p className="mt-2 text-[11px] font-medium leading-relaxed text-slate-500">
-                  If {email} has an approved account, a code is on its way. It
-                  expires in 10 minutes.
-                </p>
-              </div>
-            ) : (
-              <p className="text-[11px] font-medium leading-relaxed text-slate-500">
-                We will email you a code. Only addresses an administrator has
-                approved can sign in.
-              </p>
-            )}
+            <p className="text-[11px] font-medium leading-relaxed text-slate-500">
+              Only addresses an administrator has approved can sign in.
+            </p>
 
             {error ? (
               <div
@@ -277,13 +194,7 @@ export function CredentialsForm({
             >
               <div className="absolute inset-0 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 rounded-2xl" />
               <div className="w-full py-3.5 bg-black rounded-[14px] relative group transition duration-200 text-white font-extrabold text-sm hover:bg-transparent flex items-center justify-center gap-2">
-                <span>
-                  {pending
-                    ? "Please wait…"
-                    : step === "email"
-                      ? "Email me a code"
-                      : "Sign in"}
-                </span>
+                <span>{pending ? "Please wait…" : "Sign in"}</span>
                 {!pending && <ArrowRight className="h-4 w-4" />}
               </div>
             </button>

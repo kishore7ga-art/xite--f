@@ -99,24 +99,17 @@ export const loginRequest = (email: string, password: string) =>
   });
 
 /**
- * Step one of signing in: ask for a code.
+ * Signing in with an address and nothing else.
  *
- * Answers `{ sent: true }` whether or not the address has an account, so there
- * is nothing here worth branching on — the screen moves to the code step because
- * the form was submitted, not because the backend said the address exists. Same
- * shape, and same reason, as `requestAccessRequest` below.
+ * No password, and no code sent to the mailbox — the address is the credential.
+ * The endpoint answers 401 for an address it does not know, which is not an
+ * enumeration weakness so much as an admission: a successful sign-in returns a
+ * session, so nothing is being kept from anybody who can ask twice.
  */
-export const requestLoginCodeRequest = (email: string) =>
-  api<{ sent: boolean }>("/api/v1/auth/login/code", {
+export const loginWithEmailRequest = (email: string) =>
+  api<{ subdomain: string; next: string }>("/api/v1/auth/login/email", {
     method: "POST",
     body: { email },
-  });
-
-/** Step two: the code that was emailed, which is the credential. */
-export const verifyLoginCodeRequest = (email: string, code: string) =>
-  api<{ subdomain: string; next: string }>("/api/v1/auth/login/verify", {
-    method: "POST",
-    body: { email, code },
   });
 
 /**
