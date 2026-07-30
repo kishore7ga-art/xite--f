@@ -37,8 +37,10 @@ import {
   FolderOpen,
   Settings,
   X,
+  LogOut,
 } from "lucide-react";
 
+import { logout } from "@/app/actions/auth";
 import { AddSectionMenu } from "@/components/editor/AddSectionMenu";
 import { AssetsMediaPanel } from "@/components/editor/AssetsMediaPanel";
 import { DesignThemePanel } from "@/components/editor/DesignThemePanel";
@@ -90,6 +92,7 @@ export function EditorShell({
   const [activeContextMenuPageId, setActiveContextMenuPageId] = useState<string | null>(null);
   const [deviceMode, setDeviceMode] = useState<"desktop" | "tablet" | "mobile">("desktop");
   const [activePanel, setActivePanel] = useState<"pages" | "design" | "assets" | null>("pages");
+  const [showUserMenu, setShowUserMenu] = useState(false);
   
   // Live Palette and Fonts for instant real-time canvas updates
   const [livePalette, setLivePalette] = useState<PaletteColors>(data.theme.colors);
@@ -224,7 +227,10 @@ export function EditorShell({
 
       <div
         className="flex h-screen w-screen overflow-hidden bg-[#09090B] text-white font-sans select-none"
-        onClick={() => setActiveContextMenuPageId(null)}
+        onClick={() => {
+          setActiveContextMenuPageId(null);
+          setShowUserMenu(false);
+        }}
       >
         {/* ─── 1. LEFT ICON RAIL (56px width, Monochrome Black & White) ─── */}
         <aside className="z-40 flex w-[56px] shrink-0 flex-col items-center justify-between border-r border-[#1F1F23] bg-[#09090B] py-4">
@@ -283,12 +289,62 @@ export function EditorShell({
             </button>
           </div>
 
-          {/* User Avatar Circle */}
+          {/* User Avatar Circle & Sign Out Popover */}
           <div className="relative flex flex-col items-center">
-            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-neutral-800 border border-neutral-700 text-xs font-bold text-white shadow-inner">
-              {initialLetter}
-            </div>
-            <span className="absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full bg-emerald-500 ring-2 ring-[#09090B]" title="Active Session" />
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                setShowUserMenu((prev) => !prev);
+              }}
+              title="User Account & Sign Out"
+              className="relative flex h-9 w-9 items-center justify-center rounded-full bg-neutral-800 border border-neutral-700 text-xs font-bold text-white shadow-inner hover:border-white transition group"
+            >
+              <span>{initialLetter}</span>
+              <span className="absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full bg-emerald-500 ring-2 ring-[#09090B]" title="Active Session" />
+            </button>
+
+            {/* User Account & Sign Out Popover Menu */}
+            {showUserMenu && (
+              <div
+                className="absolute left-14 bottom-0 z-50 w-56 overflow-hidden rounded-2xl border border-[#26272B] bg-[#111113] p-3 shadow-2xl backdrop-blur-2xl text-xs text-white"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <div className="flex items-center gap-2.5 border-b border-[#26272B] pb-3 mb-2.5">
+                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-white text-black font-bold shrink-0">
+                    {initialLetter}
+                  </div>
+                  <div className="min-w-0">
+                    <p className="font-bold text-white truncate">
+                      {college.name || "Kaveri Institute"}
+                    </p>
+                    <p className="text-[10px] text-emerald-400 font-mono flex items-center gap-1">
+                      <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                      Active Session
+                    </p>
+                  </div>
+                </div>
+
+                <div className="space-y-1 mb-3 text-[11px] text-neutral-400 font-mono px-1">
+                  <p className="truncate">Subdomain: <span className="text-neutral-200">{college.subdomain}</span></p>
+                  <p className="truncate">Status: <span className="text-emerald-400 capitalize">{college.status.toLowerCase()}</span></p>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowUserMenu(false);
+                    run(async () => {
+                      await logout();
+                    });
+                  }}
+                  className="flex w-full items-center justify-center gap-2 rounded-xl bg-red-500/10 border border-red-500/20 px-3 py-2 text-xs font-bold text-red-400 hover:bg-red-500 hover:text-white transition group"
+                >
+                  <LogOut className="h-3.5 w-3.5 group-hover:scale-110 transition-transform" />
+                  <span>Sign Out</span>
+                </button>
+              </div>
+            )}
           </div>
         </aside>
 
