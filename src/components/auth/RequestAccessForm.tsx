@@ -23,7 +23,6 @@ import { ApiError, requestAccessRequest } from "@/lib/api-client";
 export function RequestAccessForm() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
   const [organization, setOrganization] = useState("");
   const [message, setMessage] = useState("");
   const [submitted, setSubmitted] = useState(false);
@@ -39,7 +38,6 @@ export function RequestAccessForm() {
       await requestAccessRequest({
         name,
         email,
-        password,
         ...(organization.trim() ? { organization } : {}),
         ...(message.trim() ? { message } : {}),
       });
@@ -114,21 +112,8 @@ export function RequestAccessForm() {
               placeholder="you@college.edu.in"
               className={INPUT}
             />
-          </Field>
-
-          <Field label="Account Password" icon={<Lock className="h-4 w-4" />}>
-            <input
-              type="password"
-              value={password}
-              onChange={(event) => setPassword(event.target.value)}
-              autoComplete="new-password"
-              required
-              minLength={6}
-              placeholder="••••••••"
-              className={INPUT}
-            />
             <span className="mt-1.5 block text-xs text-slate-500">
-              You will use this password to log in once an admin approves your request.
+              The admin approval link or account login details will be sent here.
             </span>
           </Field>
 
