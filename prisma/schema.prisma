@@ -544,3 +544,32 @@ model ServiceSecret {
 
   @@map("service_secrets")
 }
+
+/// A one-time code emailed to somebody signing in.
+///
+/// Sign-in is the address plus proof of reaching it: there is no password on
+/// this path, so the code *is* the credential and it is treated like one. The
+/// hash is stored rather than the value, for the same reason
+/// `AccessRequest.inviteTokenHash` is — a readable column would let anybody with
+/// database access sign in as any college, which is the one thing this is
+/// supposed to prevent.
+///
+/// One row per address at a time: asking for a second code replaces the first,
+/// so a code read out of an old email cannot be used behind a newer one.
+///
+/// Rows are deleted on use and on replacement. `expiresAt` is what makes an
+/// abandoned one harmless.
+model LoginCode {
+  /// The address, which is also the lookup — hence the primary key rather than
+  /// a surrogate id and a unique index saying the same thing.
+  email     String   @id
+  /// SHA-256 of the six digits. Never the digits.
+  codeHash  String   @map("code_hash")
+  expiresAt DateTime @map("expires_at")
+  /// Wrong guesses so far. Six digits is a million possibilities and a bounded
+  /// number of tries is what keeps that from being a formality.
+  attempts  Int      @default(0)
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@map("login_codes")
+}

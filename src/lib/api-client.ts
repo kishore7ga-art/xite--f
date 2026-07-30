@@ -99,6 +99,27 @@ export const loginRequest = (email: string, password: string) =>
   });
 
 /**
+ * Step one of signing in: ask for a code.
+ *
+ * Answers `{ sent: true }` whether or not the address has an account, so there
+ * is nothing here worth branching on — the screen moves to the code step because
+ * the form was submitted, not because the backend said the address exists. Same
+ * shape, and same reason, as `requestAccessRequest` below.
+ */
+export const requestLoginCodeRequest = (email: string) =>
+  api<{ sent: boolean }>("/api/v1/auth/login/code", {
+    method: "POST",
+    body: { email },
+  });
+
+/** Step two: the code that was emailed, which is the credential. */
+export const verifyLoginCodeRequest = (email: string, code: string) =>
+  api<{ subdomain: string; next: string }>("/api/v1/auth/login/verify", {
+    method: "POST",
+    body: { email, code },
+  });
+
+/**
  * Asking for access — soon the only way in.
  *
  * Answers 202 with `{ received: true }` whether or not a row was written: a
